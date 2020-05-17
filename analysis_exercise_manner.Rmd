@@ -1,0 +1,82 @@
+---
+title: "Analysis Exercise Manner"
+author: "C. Zhang"
+date: "5/17/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+The goal of this project is to predict the manner in which participants did the exercise. This is the "classe" variable in the datasets. At the end, I will predict 20 different test cases using my prediction model.
+
+## Loading and Exploring Data
+
+Download training and testing data. Load the libraries we need in this project. 
+Remove the rows of data which has 'NA' and the variables which are not required 
+for the predictions from both the training and testing set.
+
+```{r loading_training}
+library(dplyr)
+library(ggplot2)
+library(caret)
+
+training <- read.csv('./pml-training.csv', na.strings=c('','NA', "#DIV/0!"), header = TRUE)
+dim(training)
+head(names(training))
+grep('classe', names(training))
+head(training[, 160])
+training = training[,!apply(training,2,function(x) any(is.na(x)) )]
+training = training[,-c(1:7)]
+```
+
+```{r loading_testing}
+testing <- read.csv('./pml-testing.csv', na.strings=c('','NA', "#DIV/0!"), header = TRUE)
+dim(testing)
+testing = testing[,!apply(testing,2,function(x) any(is.na(x)) )]
+testing = testing[,-c(1:7)]
+```
+
+## Training Data
+
+For cross validation, we split the training data into two groups. The ratio is 60:40.
+
+```{r training_separate}
+set.seed(336699)
+t <- createDataPartition(y = training$classe, p = .6, list = FALSE)
+trainingCross <- training[t,]
+testingCross <- training[-t,]
+dim(trainingCross)
+dim(testingCross)
+```
+
+Firstly I training with the trainingCross data by using the random forest model. Then I predict the outcome with the testingCross data. At last, I examine the confusion matrix to see how well the predictive model performed
+
+```{r training}
+aTrain <- train(classe ~ ., data = trainingCross, method = 'rf')
+aPred <- predict(aTrain, testingCross)
+crossT <- confusionMatrix(aPred, testingCross$classe)
+crossT$table
+crossT$overall[1]
+```
+
+From the result, we can find that the accuracy is 99.15% which means pretty good to predict classe.
+
+## Prediction
+
+Now we use the model to predict the test data and show the prediction.
+
+```{r prediction}
+bPred = predict(aTrain, testing)
+bPred
+```
+
+## Conclusion
+
+We build a prediction model which based on Random Forest and trained with the training data. The accuracy is 99.15% which is pretty good. At last, we use the model to predict the test data.
+
+
+
